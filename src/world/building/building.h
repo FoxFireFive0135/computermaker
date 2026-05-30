@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+typedef struct block block_t;
+
 #include "../block/block.h"
 
 #define BUILDING_MAX_PINS 256
@@ -24,7 +26,7 @@
 		building.pins[pin_index++] = &info.chunk->blocks[info.x][info.y][info.z]; \
 	}
 
-typedef struct {
+typedef struct building {
 	enum BuildingId {
 		ASCII_KEY_INPUT,
 		MEMORY,
@@ -35,7 +37,7 @@ typedef struct {
 		DIVIDER,
 	} id;
 	int x, y, z;
-	enum {
+	enum Rotation {
 		ROTATION_FRONT,
 		ROTATION_LEFT,
 		ROTATION_BACK,
@@ -46,17 +48,22 @@ typedef struct {
 		struct {
 			void *cells;
 			int address_width;
+			size_t size;
 		} memory;
 	} state;
 	int bit_width;
 } building_t;
 
 const char *building_id_name(enum BuildingId id);
+enum BuildingId name_building_id(const char *name);
 void buildings_tick(void);
 void building_tick(building_t *building);
+void building_poke(building_t *building);
 void building_create(building_t building);
 
 BUILDING_TICK_DECLARE(memory)
 BUILDING_TICK_DECLARE(dualmemory)
 BUILDING_TICK_DECLARE(multiplier)
 BUILDING_TICK_DECLARE(divider)
+BUILDING_TICK_DECLARE(textconsole)
+BUILDING_TICK_DECLARE(asciikeyinput)

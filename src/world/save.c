@@ -48,7 +48,14 @@ typedef struct {
 typedef struct {
 	enum BuildingId id;
 	int x, y, z;
-    int rotation;
+    enum Rotation rotation;
+	union {
+		struct {
+			void *cells;
+			int address_width;
+		} memory;
+	} state;
+	int bit_width;    
 } savebuilding_t;
 
 #define savebuilding_terminator (savebuilding_t){ \
@@ -56,7 +63,7 @@ typedef struct {
 	.x = 0xff1c4, \
 	.y = 0xff1c5, \
 	.z = 0xff1c6, \
-    .rotation = 0xffff \
+    .rotation = 0xffff, \
 }
 
 #define header "Save file for ComputerMaker " APP_RELEASE_STRING
@@ -97,6 +104,8 @@ int save_load(const char *filename) {
             for (int y = 0; y < CHUNK_Y; y++) {
                 for (int z = 0; z < CHUNK_Z; z++) {
                     saveblock_t saveblock = savechunk.blocks[x][y][z];
+                    if (saveblock.id == BUILDING_PIN)
+                        continue;
 
                     chunk.blocks[x][y][z] = (block_t){
                         .id = savechunk.blocks[x][y][z].id,
@@ -110,7 +119,16 @@ int save_load(const char *filename) {
         }
 
         chunk_bake(&chunk);
-        world_add_chunk(&state.world, chunk);
+        chunk_t *_chunk = world_add_chunk(&state.world, chunk);
+
+        for (int x = 0; x < CHUNK_X; x++)
+            for (int y = 0; y < CHUNK_Y; y++)
+                for (int z = 0; z < CHUNK_Z; z++)
+                    world_cache_sus_logic_block(&state.world, (cached_logic_block_t){
+                       .block = &_chunk->blocks[x][y][z],
+                       .chunk = _chunk,
+                       .valid = true
+                    });
     }
 
     savebuilding_t *buildings = save;
@@ -121,13 +139,16 @@ int save_load(const char *filename) {
             break;
         }
 
-        building_create((building_t){
-        	.id = building.id,
-        	.x = building.x,
-        	.y = building.y,
-        	.z = building.z,
-            .rotation = building.rotation
-        });
+        building_t _building;
+        _building.id = building.id;
+        _building.x = building.x;
+        _building.y = building.y;
+        _building.z = building.z;
+        _building.rotation = building.rotation;
+        memcpy(&_building.state, &building.state, sizeof(building.state));
+        _building.bit_width = building.bit_width;
+
+        building_create(_building);
     }
 
     savewire_t *wires = save;
@@ -145,7 +166,7 @@ int save_load(const char *filename) {
             .dx = wire.dx,
             .dy = wire.dy,
             .dz = wire.dz,
-        });
+        }, true);
     }
 
     float aspect = state.renderer.camera.perspective.aspect;
@@ -198,13 +219,16 @@ void save_save(const char *filename) {
     for (int i = 0; i < buildings_size; i++) {
     	if (!buildings[i]) continue;
 
-    	fwrite(&(savebuilding_t){
-    		.id = buildings[i]->id,
-    		.x = buildings[i]->x,
-    		.y = buildings[i]->y,
-    		.z = buildings[i]->z,
-            .rotation = buildings[i]->rotation
-    	}, sizeof(savebuilding_t), 1, fptr);
+        savebuilding_t building;
+    	building.id = buildings[i]->id,
+    	building.x = buildings[i]->x,
+    	building.y = buildings[i]->y,
+    	building.z = buildings[i]->z,
+        building.rotation = buildings[i]->rotation,
+        memcpy(&building.state, &buildings[i]->state, sizeof(building.state));
+        building.bit_width = buildings[i]->bit_width;
+
+    	fwrite(&building, sizeof(savebuilding_t), 1, fptr);
     }
 
 	fwrite(&savebuilding_terminator, sizeof(savebuilding_t), 1, fptr);

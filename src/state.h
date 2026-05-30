@@ -17,6 +17,7 @@ extern struct state {
             MODE_BLOCK_POKE,
             MODE_BLOCK_HOVER,
             MODE_BUILDING_PLACE,
+            MODE_BUILDING_POKE,
             MODE_LAST
         } mode;
         // block placing
@@ -39,6 +40,9 @@ extern struct state {
 
         // hovered block
         block_t *hovered_block;
+
+        // building placing
+        building_t selected_building;
     } player;
     float deltaTime;
     bool restart;

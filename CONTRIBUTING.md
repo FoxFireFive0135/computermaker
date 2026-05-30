@@ -52,6 +52,7 @@ There is a style guide to be followed:
 - Pointers are on the right side `char *ptr`
 - Pointers in typecasts like so `(uint32_t *)` not `(uint32_t*)`
 - No spaces between typecasts `(char)value` not `(char) value`
+- Labels must be placed at the start of the line
 
 ### Newlines
 - Double newlines if the block of code is not related.

@@ -121,14 +121,14 @@ static void cm2save_add_block(stringview_t sv_block) {
             block.id = XOR;
             break;
         case 4://BUTTON
-            block.id = BRICK;        
+            block.id = OR;
             app_warn("button not implemented\n");
             break;
         case 5://FLIPFLOP
             block.id = FLIPFLOP;
             break;
         case 6://LED
-            block.id = BRICK;        
+            block.id = OR;
             app_warn("led not implemented\n");
             break;
         case 7://SOUND
@@ -177,7 +177,7 @@ static void cm2save_add_block(stringview_t sv_block) {
             app_warn("conductorv2 not implemented\n");
             break;
         case 19://LEDMIXER
-            block.id = BRICK;        
+            block.id = OR;        
             app_warn("ledmixer not implemented\n");
             break;
     }
@@ -223,7 +223,7 @@ static void cm2save_add_wire(stringview_t sv_wire) {
         .dx = dest.x,
         .dy = dest.y,
         .dz = dest.z
-    });
+    }, false);
 }
 
 
@@ -481,7 +481,7 @@ static void cm2save_add_building(stringview_t sv_building) {
                     .dx = block_ptr.x,
                     .dy = block_ptr.y,
                     .dz = block_ptr.z
-                });
+                }, false);
             } else if (start_ch == '1') {//input
                 world_create_wire((wire_t){
                     .ox = block_ptr.x,
@@ -490,7 +490,7 @@ static void cm2save_add_building(stringview_t sv_building) {
                     .dx = pin_ptr.x,
                     .dy = pin_ptr.y,
                     .dz = pin_ptr.z
-                });
+                }, false);
             }
         }
     }

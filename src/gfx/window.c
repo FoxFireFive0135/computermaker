@@ -1,12 +1,10 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <string.h>
 
 #include "window.h"
 #include "../global.h"
 #include "../state.h"
 #include "../player/chat.h"
-#include "../config.h"
 
 struct window window;
 
@@ -29,6 +27,8 @@ static void key_callback(GLFWwindow* gwindow, int key, int scancode, int action,
         case GLFW_PRESS: window.keyboard.keys[key].down = true; break;
         case GLFW_RELEASE: window.keyboard.keys[key].down = false;
     }
+    window.keyboard.keys[key].mods = mods;
+    chat_key_callback();
 }
 
 static void char_callback(GLFWwindow* gwindow, unsigned int codepoint) {

@@ -39,4 +39,4 @@ void chat_add_message(
     const char *text
 );
 void chat_char_callback(unsigned int codepoint);
-void chat_cleanup(void);
+void chat_key_callback(void);

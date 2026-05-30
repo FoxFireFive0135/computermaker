@@ -30,14 +30,16 @@ void hud_draw(void) {
     		"ID: %s\n"
     		"Inputs: %d\n"
     		"State: %d\n"
-    		"New State: %d\n",
+    		"New State: %d\n"
+            "Building: %p\n",
     		block_id_name(state.player.hovered_block->id),
     		state.player.hovered_block->gate.num_inputs,
     		state.player.hovered_block->gate.state,
-    		state.player.hovered_block->gate.new_state
+    		state.player.hovered_block->gate.new_state,
+            state.player.hovered_block->building
     	);
 
-    	renderer_text(0, 400, 2, text_buffer, NULL);
+    	renderer_text(0, 368, 2, text_buffer, NULL);
     }
     
     renderer_text(0, 0, 2, APP_RELEASE_STRING, (vec3){0, 1, 0});

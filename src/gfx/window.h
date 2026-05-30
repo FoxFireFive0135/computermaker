@@ -13,6 +13,7 @@ extern struct window {
     struct {
         struct {
             bool down;
+            int mods;
         } keys[GLFW_KEY_LAST];
     } keyboard;
     struct {

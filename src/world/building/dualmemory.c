@@ -20,27 +20,27 @@ void _dualmemory_tick(building_t *building) {
 
 	if (building->bit_width <= 8) {
 		if (write) {
-			((uint8_t*)(building->state.memory.cells))[save_address] = value;
+			((uint8_t *)(building->state.memory.cells))[save_address] = value;
 		}
-		output = ((uint8_t*)(building->state.memory.cells))[load_address];
+		output = ((uint8_t *)(building->state.memory.cells))[load_address];
 	}
 	else if (building->bit_width <= 16) {
 		if (write) {
-			((uint16_t*)(building->state.memory.cells))[save_address] = value;
+			((uint16_t *)(building->state.memory.cells))[save_address] = value;
 		}
-		output = ((uint16_t*)(building->state.memory.cells))[load_address];
+		output = ((uint16_t *)(building->state.memory.cells))[load_address];
 	}
 	else if (building->bit_width <= 32) {
 		if (write) {
-			((uint32_t*)(building->state.memory.cells))[save_address] = value;
+			((uint32_t *)(building->state.memory.cells))[save_address] = value;
 		}
-		output = ((uint32_t*)(building->state.memory.cells))[load_address];
+		output = ((uint32_t *)(building->state.memory.cells))[load_address];
 	}
 	else {
 		if (write) {
-			((uint64_t*)(building->state.memory.cells))[save_address] = value;
+			((uint64_t *)(building->state.memory.cells))[save_address] = value;
 		}
-		output = ((uint64_t*)(building->state.memory.cells))[load_address];
+		output = ((uint64_t *)(building->state.memory.cells))[load_address];
 	}
 
 	for (i = 0; i < building->bit_width; i++) {

@@ -184,13 +184,13 @@ void wires_bake(wire_t *wires) {
     vbo_buffer(&ibo, instances, 0, instances_size * sizeof(mat4));
 }
 
-void world_create_wire(wire_t wire) {
+void world_create_wire(wire_t wire, bool wire_air) {
     struct world_get_at_info info  = world_get_at(&state.world, wire.ox, wire.oy, wire.oz),
                              info2 = world_get_at(&state.world, wire.dx, wire.dy, wire.dz);
     block_t *block = &info.chunk->blocks[info.x][info.y][info.z],
             *block2 = &info2.chunk->blocks[info2.x][info2.y][info2.z];
 
-    if (block->id == AIR || block2->id == AIR)
+    if (!wire_air && (block->id == AIR || block2->id == AIR))
         return;
 
     for (int i = 0; i < wires_size; i++) {

@@ -1,7 +1,11 @@
+#include <math.h>
+
 #include "building.h"
-#include "../../state.h"
+#include "../state.h"
+#include "../world.h"
+#include "../block/block.h"
 #include "../../util.h"
-#include "../../global.h"
+#include "../../player/chat.h"
 
 building_t **buildings = NULL;
 size_t buildings_size = 0, buildings_count = 1;
@@ -19,6 +23,16 @@ const char *building_id_name(enum BuildingId id) {
 	}
 }
 
+enum BuildingId name_building_id(const char *name) {
+	if (!strcmp(name, "ASCII_KEY_INPUT")) return ASCII_KEY_INPUT;
+	if (!strcmp(name, "MEMORY")) return MEMORY;
+	if (!strcmp(name, "DUAL_MEMORY")) return DUAL_MEMORY;
+	if (!strcmp(name, "TEXT_CONSOLE")) return TEXT_CONSOLE;
+	if (!strcmp(name, "LARGE_RGB_DISPLAY")) return LARGE_RGB_DISPLAY;
+	if (!strcmp(name, "MULTIPLIER")) return MULTIPLIER;
+	if (!strcmp(name, "DIVIDER")) return DIVIDER;
+}
+
 static void push_building(building_t *building) {
 	buildings_size++;
 	while (buildings_count <= buildings_size) {
@@ -30,11 +44,11 @@ static void push_building(building_t *building) {
 
 void building_tick(building_t *building) {
 	switch (building->id) {
-		case MEMORY: _memory_tick(building);break;
-		case DUAL_MEMORY: _dualmemory_tick(building);break;
-		case MULTIPLIER: _multiplier_tick(building);break;
-		case DIVIDER: _divider_tick(building);break;
-		default:break;
+		case MEMORY: _memory_tick(building); break;
+		case DUAL_MEMORY: _dualmemory_tick(building); break;
+		case MULTIPLIER: _multiplier_tick(building); break;
+		case DIVIDER: _divider_tick(building); break;
+		default: break;
 	}
 }
 
@@ -44,15 +58,37 @@ void buildings_tick(void) {
 	}
 }
 
+void building_poke(building_t *building) {
+	if (!building) return;
+
+	chat_add_message("comm", "poking building...");
+
+	switch (building->id) {
+		case MEMORY:
+		default: chat_add_message("comm", "unknown building");
+	}
+}
+
 void building_create(building_t building) {
 	int pin_index = 0;
 	int byte_width, memory_thickness;
-	if (building.bit_width <= 8) byte_width = sizeof(uint8_t);
-	else if (building.bit_width <= 16) byte_width = sizeof(uint16_t);
-	else if (building.bit_width <= 32) byte_width = sizeof(uint32_t);
-	else byte_width = sizeof(uint64_t);
+
+	if (building.bit_width <= 8) {
+		byte_width = sizeof(uint8_t);
+	}
+	else if (building.bit_width <= 16) {
+		byte_width = sizeof(uint16_t);
+	}
+	else if (building.bit_width <= 32) {
+		byte_width = sizeof(uint32_t);
+	}
+	else {
+		byte_width = sizeof(uint64_t);
+	}
+
 	switch (building.id) {
 		case MEMORY:
+			building.state.memory.size = (size_t)pow(2, building.state.memory.address_width);
 			building.state.memory.cells = scalloc(1, ((uint64_t)1 << building.state.memory.address_width) * byte_width);
 			
 			if (building.state.memory.address_width >= 16) memory_thickness = 3;
@@ -76,7 +112,6 @@ void building_create(building_t building) {
 			// place the write pin
 			BUILDING_PLACE_PIN(-center_x -building.state.memory.address_width -building.bit_width -memory_thickness, 0, -memory_thickness)
 			break;
-		
 		case DUAL_MEMORY:
 			building.state.memory.cells = scalloc(1, ((uint64_t)1 << building.state.memory.address_width) * byte_width);
 
@@ -102,7 +137,6 @@ void building_create(building_t building) {
 			// place the write pin
 			BUILDING_PLACE_PIN(-6 - building.bit_width, 0, -2)
 			break;
-
 		case MULTIPLIER:
 			// generate input a
 			for (int x = 0; x < building.bit_width; x++) {
@@ -121,7 +155,6 @@ void building_create(building_t building) {
 				BUILDING_PLACE_PIN(x + 2 - building.bit_width, 0, 1)
 			}
 			break;
-		
 		case DIVIDER:
 			// generate input a
 			for (int x = 0; x < building.bit_width; x++) {
@@ -140,11 +173,15 @@ void building_create(building_t building) {
 				BUILDING_PLACE_PIN(x + 2 - building.bit_width, 0, 1)
 			}
 			break;
-
 		default: break;			
 	}
 
 	building_t *_building = smalloc(sizeof(building_t));
 	memcpy(_building, &building, sizeof(building_t));
+
+	for (int i = 0; i < BUILDING_MAX_PINS; i++)
+		if (building.pins[i])
+			building.pins[i]->building = _building;
+
 	push_building(_building);
 }

@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "block.h"
 #include "../util.h"
 #include "../global.h"

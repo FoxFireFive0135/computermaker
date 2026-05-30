@@ -1,12 +1,11 @@
 #pragma once
 
-#include <string.h>
-#include <cglm/cglm.h>
-
 #include "../blockmesh.h"
+#include "../building/building.h"
 
 #define BLOCK_TICK_DECLARE(name) extern void _##name##_tick(block_t *block);
 
+typedef struct building building_t;
 struct logic_gate;
 
 typedef struct {
@@ -24,7 +23,7 @@ typedef struct logic_gate {
     bool poked;
 } logic_gate_t;
 
-typedef struct {
+typedef struct block {
     enum BlockId {
         AIR,
         STUD,
@@ -45,6 +44,7 @@ typedef struct {
         BLOCKID_LAST,
     } id;
     logic_gate_t gate;
+    building_t *building;
 } block_t;
 
 const char *block_id_name(enum BlockId id);

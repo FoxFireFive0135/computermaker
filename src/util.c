@@ -38,3 +38,19 @@ char *readfile(const char *filename) {
     bin[size] = '\0';
     return bin;
 }
+
+void *readbin(const char *filename, size_t *_size) {
+    FILE *fptr = fopen(filename, "rb");
+    if (!fptr) {
+        app_warn("Failed to open the file %s\n", filename)
+        return NULL;
+    }
+    fseek(fptr, 0, SEEK_END);
+    size_t size = ftell(fptr);
+    fseek(fptr, 0, SEEK_SET);
+    void *bin = smalloc(size);
+    fread(bin, 1, size, fptr);
+    fclose(fptr);
+    *_size = size;
+    return bin;	
+}

@@ -6,3 +6,4 @@ build
 release
 gitignore
 install.sh
+.save

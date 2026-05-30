@@ -11,8 +11,8 @@
 #include "chat.h"
 #include "keybinds.h"
 
-#define max(x,y) ((x)>(y)?(x):(y))
-#define min(x,y) ((x)>(y)?(y):(x))
+#define max(x, y) ((x) > (y) ? (x) : (y))
+#define min(x, y) ((x) > (y) ? (y) : (x))
 
 static bool mouse_free = true;
 static bool fullscreen = false;
@@ -121,7 +121,10 @@ void input_handle(void) {
                     }
                 }
                 info = world_get_at(&state.world, ray_info.x, ray_info.y,ray_info.z);
-                info.chunk->blocks[info.x][info.y][info.z].id = state.player.selected_block;
+                block_t block;
+                block.id = state.player.selected_block;
+                block.gate = info.chunk->blocks[info.x][info.y][info.z].gate;
+                world_place_at(&state.world, ray_info.x, ray_info.y, ray_info.z, block);
                 chunk_bake(info.chunk);
                 break;
             }
@@ -142,7 +145,7 @@ void input_handle(void) {
                         .dx = relative_info.x,
                         .dy = relative_info.y,
                         .dz = relative_info.z
-                    });
+                    }, false);
                 } else if (state.player.mode == MODE_WIRE_DESTROY) {
                     world_destroy_wire((wire_t){
                         .ox = state.player.wire_ox,
@@ -174,31 +177,31 @@ void input_handle(void) {
                         y_diff1 = abs(state.player.points[THIRD_POINT][1] - state.player.points[FOURTH_POINT][1])+1,
                         z_diff1 = abs(state.player.points[THIRD_POINT][2] - state.player.points[FOURTH_POINT][2])+1;
                         
-                    if (x_diff0!=y_diff0 && x_diff0>1 && y_diff0>1) {
+                    if (x_diff0 != y_diff0 && x_diff0 > 1 && y_diff0 > 1) {
                         state.player.point = 0;
                         break;
                     }
-                    if (x_diff0!=z_diff0 && x_diff0>1 && z_diff0>1) {
+                    if (x_diff0 != z_diff0 && x_diff0 > 1 && z_diff0 > 1) {
                         state.player.point = 0;
                         break;
                     }
-                    if (y_diff0!=z_diff0 && y_diff0>1 && z_diff0>1) {
+                    if (y_diff0 != z_diff0 && y_diff0 > 1 && z_diff0 > 1) {
                         state.player.point = 0;
                         break;
                     }
-                    if (x_diff1!=y_diff1 && x_diff1>1 && y_diff1>1) {
+                    if (x_diff1 != y_diff1 && x_diff1 > 1 && y_diff1 > 1) {
                         state.player.point = 0;
                         break;
                     }
-                    if (x_diff1!=z_diff1 && x_diff1>1 && z_diff1>1) {
+                    if (x_diff1 != z_diff1 && x_diff1 > 1 && z_diff1 > 1) {
                         state.player.point = 0;
                         break;
                     }
-                    if (y_diff1!=z_diff1 && y_diff1>1 && z_diff1>1) {
+                    if (y_diff1 != z_diff1 && y_diff1 > 1 && z_diff1 > 1 ) {
                         state.player.point = 0;
                         break;
                     }
-                    int length = min(max(max(x_diff0,y_diff0),z_diff0),max(max(x_diff1,y_diff1),z_diff1));
+                    int length = min(max(max(x_diff0, y_diff0), z_diff0), max(max(x_diff1, y_diff1), z_diff1));
                     int dx0 = 0,
                         dy0 = 0,
                         dz0 = 0,
@@ -232,7 +235,7 @@ void input_handle(void) {
                                 .dx = x1,
                                 .dy = y1,
                                 .dz = z1
-                            });
+                            }, false);
                         } else {
                             world_destroy_wire((wire_t){
                                 .ox = x0,
@@ -273,33 +276,36 @@ void input_handle(void) {
                         default: break;
                     }
                 }
+                
                 int camera_rotation;
                 vec3 camera_direction;
                 glm_vec3_sub(state.renderer.camera.target, state.renderer.camera.origin, camera_direction);
                 if (fabsf(camera_direction[2]) > fabsf(camera_direction[0])) {
-                    if (camera_direction[2] > 0) {
+                    if (camera_direction[2] > 0)
                         camera_rotation = CAMERA_DIRECTION_FORWARD;
-                    } else {
+                    else
                         camera_rotation = CAMERA_DIRECTION_BACK;
-                    }
-                } else {
-                    if (camera_direction[0] > 0) {
-                        camera_rotation = CAMERA_DIRECTION_LEFT;
-                    } else {
-                        camera_rotation = CAMERA_DIRECTION_RIGHT;
-                    }
                 }
-                building_create((building_t){
-                    .id = MEMORY,
-                    .x = ray_info.x,
-                    .y = ray_info.y,
-                    .z = ray_info.z,
-                    .rotation = camera_rotation,
-                    .bit_width = 16,
-                    .state.memory.address_width = 16
-                });
+                else {
+                    if (camera_direction[0] > 0)
+                        camera_rotation = CAMERA_DIRECTION_LEFT;
+                    else
+                        camera_rotation = CAMERA_DIRECTION_RIGHT;
+                }
+
+                building_t building = state.player.selected_building;
+                building.x = ray_info.x;
+                building.y = ray_info.y;
+                building.z = ray_info.z;
+                building.rotation = camera_rotation;
+
+                building_create(building);
                 
                 break;
+            }
+
+            case MODE_BUILDING_POKE: {
+                building_poke(info.chunk->blocks[info.x][info.y][info.z].building);
             }
 
             case MODE_BLOCK_POKE: {

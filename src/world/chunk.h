@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../gfx/renderer.h"
 #include "block/block.h"
+#include "../gfx/vao.h"
 #include "../gfx/vertex.h"
 
 #define CHUNK_X 16
@@ -38,4 +38,3 @@ chunk_t chunk_gen(int x, int y, int z);
 void chunk_bake(chunk_t *chunk);
 void chunk_bake_at(chunk_t *chunk, int x, int y, int z);
 void chunk_draw(chunk_t *chunk);
-

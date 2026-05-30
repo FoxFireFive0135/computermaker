@@ -12,6 +12,6 @@ typedef struct {
 void set_wire_thickness(float thickness);
 
 void world_wire_init(void);
-void world_create_wire(wire_t wire);
+void world_create_wire(wire_t wire, bool wire_air);
 void world_destroy_wire(wire_t wire);
 void world_draw_wires(void);

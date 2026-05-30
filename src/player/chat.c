@@ -1,15 +1,16 @@
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "chat.h"
 #include "../util.h"
+#include "../state.h"
 #include "../config.h"
-#include "../state.h"
-#include "../gfx/renderer.h"
 #include "../gfx/window.h"
-#include "../world/tick.h"
 #include "../world/save.h"
-#include "../state.h"
+#include "../world/tick.h"
+
+#include "../global.h"
 
 chat_message_t chat_messages[MAX_CHAT_MESSAGES] = {0};
 size_t chat_count = 0;
@@ -20,20 +21,20 @@ size_t chat_input_len = 0;
 bool chat_active = false;
 
 block_command_t block_commands[] = {
-    {"!air\0", AIR, 5},
-    {"!stud\0", STUD, 6},
-    {"!bk\0", BRICK, 4},
-    {"!and\0", AND, 5},
-    {"!or\0", OR, 4},
-    {"!xor\0", XOR, 5},
-    {"!nand\0", NAND, 6},
-    {"!nor\0", NOR, 5},
-    {"!xnor\0", XNOR, 6},
-    {"!ff\0", FLIPFLOP, 4},
-    {"!node\0", NODE, 6}
+    {"!air", AIR, 5},
+    {"!stud", STUD, 6},
+    {"!bk", BRICK, 4},
+    {"!and", AND, 5},
+    {"!or", OR, 4},
+    {"!xor", XOR, 5},
+    {"!nand", NAND, 6},
+    {"!nor", NOR, 5},
+    {"!xnor", XNOR, 6},
+    {"!ff", FLIPFLOP, 4},
+    {"!node", NODE, 6}
 };
-#define BLOCK_COMMANDS_COUNT (sizeof(block_commands) \
-    / sizeof(block_commands[0]))
+
+#define BLOCK_COMMANDS_COUNT (sizeof(block_commands)/sizeof(block_commands[0]))
 
 void chat_render(void) {
     for (size_t i = 0; i < chat_count; i++) {
@@ -52,9 +53,73 @@ void chat_render(void) {
     }
 }
 
+static void handle_building_command(char *text) {
+    if (!strncmp(text, "!b ", 3)) { // select building
+        building_t building = {0};
+        strtok(text, " ");
+
+        building.id = name_building_id(strtok(NULL, " "));
+        switch (building.id) {
+            case MEMORY: building.state.memory.address_width = strtoul(strtok(NULL, " "), NULL, 10); break;
+            default: chat_add_message("comm", "unknown building name"); return;
+        }
+
+        building.bit_width = strtoul(strtok(NULL, " "), NULL, 10);
+
+        state.player.selected_building = building;
+    }
+    if (!strncmp(text, "!lm ", 4)) { // load memory
+    	// TODO: if bitwidth is not 8, add a parameter to pack bytes
+    	size_t size;
+   		void *bin = readbin(text + 4, &size);
+   		if (!bin) {
+   			chat_add_message("comm", "failed to open the file");
+   			return;
+   		}
+   		
+		if (state.player.hovered_block && state.player.hovered_block->building &&
+			state.player.hovered_block->building->id == MEMORY
+		) {
+			building_t *building = state.player.hovered_block->building;
+			void *cells = building->state.memory.cells;
+			size_t memory_size = building->state.memory.size;
+			
+			switch (building->bit_width) {
+				case 8:
+					for (size_t i = 0; i < size && i < memory_size; i++) {
+						((uint8_t *)cells)[i] = ((uint8_t *)bin)[i];
+					}
+					break;
+				case 16:
+					for (size_t i = 0; i < size && i < memory_size; i++) {
+						((uint16_t *)cells)[i] = ((uint8_t *)bin)[i];
+					}
+					break;
+				case 32:
+					for (size_t i = 0; i < size && i < memory_size; i++) {
+						((uint32_t *)cells)[i] = ((uint8_t *)bin)[i];
+					}				
+					break;
+				case 64:
+					for (size_t i = 0; i < size && i < memory_size; i++) {
+						((uint64_t *)cells)[i] = ((uint8_t *)bin)[i];
+					}				
+					break;					
+				default:
+					chat_add_message("comm", "memory bitwidth not supported");
+					return;					
+			}
+
+			free(bin);
+		} else
+			chat_add_message("comm", "opened the file but cant load ingame, please select a memory building");
+    }
+}
+
 void chat_handle_command(char *text) {
     char buf[256];
 
+    handle_building_command(text);
     if (!strncmp(text, "!tps ", 5)) {
         int target = atoi(text + 5);
 
@@ -146,10 +211,18 @@ void chat_char_callback(unsigned int codepoint) {
     }    
 }
 
-void chat_cleanup(void) {
-    for (size_t i = 0; i < MAX_CHAT_MESSAGES; i++) {
-        free(chat_messages[i].formatted);
-        free((void*)chat_messages[i].name);
-        free((void*)chat_messages[i].message);
-    }
+void chat_key_callback(void) {
+	if (!chat_active) return;
+	
+	if (window.keyboard.keys[GLFW_KEY_V].down && window.keyboard.keys[GLFW_KEY_V].mods & GLFW_MOD_CONTROL) {
+		const char *text = glfwGetClipboardString(window.handle);
+		if (!text) 
+		    goto done;
+
+		while (*text != '\0')
+		    chat_input[chat_input_len++] = *text++;
+		chat_input[chat_input_len] = '\0';
+	}
+done:
+	window.keyboard.keys[GLFW_KEY_V].down = false;
 }

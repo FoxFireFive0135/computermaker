@@ -26,7 +26,6 @@ void init(void) {
 }
 
 void destroy(void) {
-    chat_cleanup();
     exit(0);
 }
 
@@ -50,7 +49,7 @@ void render(void) {
     hud_draw();
 }
 
-int main() {    
+int main() {
     window_init();
     window_create("comm", 800, 600, 60, init, destroy, tick, render);
     chat_add_message("comm", APP_RELEASE_STRING);

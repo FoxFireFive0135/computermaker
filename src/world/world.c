@@ -16,18 +16,18 @@ void world_worldgen(struct world *world) {
     for (int x = 0; x < ax; x++) {
         for (int y = -1; y < ay; y++) {
             for (int z = 0; z < az; z++) {
-                world_get_at(world, x * CHUNK_X, y * CHUNK_Y, z * CHUNK_Z);
-                //world_add_chunk(world, chunk_gen(x * CHUNK_X, y * CHUNK_Y, z * CHUNK_Z));
+                world_add_chunk(world, chunk_gen(x * CHUNK_X, y * CHUNK_Y, z * CHUNK_Z));
             }
         }
     }
 }
 
-void world_add_chunk(struct world *world, chunk_t chunk) {
+chunk_t *world_add_chunk(struct world *world, chunk_t chunk) {
     chunk_t *new_chunk = smalloc(sizeof(chunk_t));
     memcpy(new_chunk, &chunk, sizeof(chunk_t));
     world->chunks = srealloc(world->chunks, ++world->chunks_size * sizeof(chunk_t*));
     world->chunks[world->chunks_size - 1] = new_chunk;
+    return new_chunk;
 }
 
 void world_draw(struct world *world) {
@@ -72,9 +72,41 @@ struct world_get_at_relative_info world_get_at_relative(struct world_get_at_info
     return info;
 }
 
+static void push_logic_block(struct world *world, cached_logic_block_t block) {
+    world->logic_blocks_size++;
+    while (world->logic_blocks_capacity <= world->logic_blocks_size) {
+        world->logic_blocks_capacity <<= 1;
+        world->logic_blocks = srealloc(world->logic_blocks, world->logic_blocks_capacity * sizeof(cached_logic_block_t));
+    }
+    world->logic_blocks[world->logic_blocks_size - 1] = block;
+}
+
+void world_cache_sus_logic_block(struct world *world, cached_logic_block_t block) {
+    // evict blocks in the cache
+    for (size_t i = 0; i < world->logic_blocks_size; i++) {
+        if (world->logic_blocks[i].valid && !is_logic_block(*world->logic_blocks[i].block)) {
+            world->logic_blocks[i].valid = false;
+        }
+    }
+    if (!is_logic_block(*(block.block))) return;
+    // try to find a free entry in the cache
+    for (size_t i = 0; i < world->logic_blocks_size; i++) {
+        if (!world->logic_blocks[i].valid) {
+            world->logic_blocks[i] = block;
+            return;
+        }
+    }
+    push_logic_block(world, block);
+}
+
 struct world_get_at_info world_place_at(struct world *world, int x, int y, int z, block_t block) {
 	struct world_get_at_info info = world_get_at(world, x, y, z);
 	info.chunk->blocks[info.x][info.y][info.z] = block;
+    world_cache_sus_logic_block(world, (cached_logic_block_t){
+        .block = &info.chunk->blocks[info.x][info.y][info.z],
+        .chunk = info.chunk,
+        .valid = true
+    });
 	chunk_bake(info.chunk);
 	return info;
 }
